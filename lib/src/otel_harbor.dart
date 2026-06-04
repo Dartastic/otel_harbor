@@ -2,7 +2,6 @@
 // Copyright 2025-2026 Mindful Software LLC d/b/a Dartastic.io, All rights reserved.
 
 import 'package:dartastic_opentelemetry/dartastic_opentelemetry.dart';
-import 'package:dartastic_opentelemetry_api/dartastic_opentelemetry_api.dart';
 
 import 'otel_harbor_suppression.dart';
 
@@ -46,39 +45,48 @@ Future<T> tracedHarbor<T>({
   final t = tracer ?? OTel.tracerProvider().getTracer('otel_harbor');
   final span = t.startSpan('harbor $operation', kind: SpanKind.client);
   try {
-    span.setStringAttribute('rpc.system', 'harbor');
+    span.addAttributes(
+        OTel.attributes([OTel.attributeString('rpc.system', 'harbor')]));
     final r = await invoke();
     final res = r.result;
     if (res != null) {
       if (res.project != null) {
-        span.setStringAttribute('harbor.project', res.project!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('harbor.project', res.project!)]));
       }
       if (res.repository != null) {
-        span.setStringAttribute('harbor.repository', res.repository!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('harbor.repository', res.repository!)]));
       }
       if (res.imageDigest != null) {
-        span.setStringAttribute('container.image.id', res.imageDigest!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('container.image.id', res.imageDigest!)]));
       }
       if (res.imageTag != null) {
-        span.setStringAttribute('container.image.tag', res.imageTag!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('container.image.tag', res.imageTag!)]));
       }
       if (res.imageSize != null) {
-        span.setIntAttribute('container.image.size', res.imageSize!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('container.image.size', res.imageSize!)]));
       }
       if (res.statusCode != null) {
-        span.setIntAttribute('http.response.status_code', res.statusCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeInt('http.response.status_code', res.statusCode!)]));
       }
       if (res.errorCode != null) {
-        span.setStringAttribute('harbor.error.code', res.errorCode!);
+        span.addAttributes(OTel.attributes(
+            [OTel.attributeString('harbor.error.code', res.errorCode!)]));
       }
-      final fail =
-          res.errorCode != null ||
+      final fail = res.errorCode != null ||
           (res.statusCode != null && res.statusCode! >= 400);
       if (fail) {
-        span.setStringAttribute(
-          ErrorResource.errorType.key,
-          res.errorCode ?? 'harbor.error',
-        );
+        span.addAttributes(OTel.attributes([
+          OTel.attributeString(
+            ErrorResource.errorType.key,
+            res.errorCode ?? 'harbor.error',
+          )
+        ]));
         span.setStatus(SpanStatusCode.Error, res.errorMessage);
       }
     }
